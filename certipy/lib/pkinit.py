@@ -36,20 +36,20 @@ DH_PARAMS = {
 }
 
 class NAME_TYPE(enum.Enum):
-	UNKNOWN = 0     #(0),	-- Name type not known
-	PRINCIPAL = 1     #(1),	-- Just the name of the principal as in
-	SRV_INST = 2     #(2),	-- Service and other unique instance (krbtgt)
-	SRV_HST = 3     #(3),	-- Service with host name as instance
-	SRV_XHST = 4     # (4),	-- Service with host as remaining components
-	UID = 5     # (5),		-- Unique ID
-	X500_PRINCIPAL = 6     #(6), -- PKINIT
-	SMTP_NAME = 7     #(7),	-- Name in form of SMTP email name
-	ENTERPRISE_PRINCIPAL = 10    #(10), -- Windows 2000 UPN
-	WELLKNOWN  = 11    #(11),	-- Wellknown
-	ENT_PRINCIPAL_AND_ID  = -130  #(-130), -- Windows 2000 UPN and SID
-	MS_PRINCIPAL = -128  #(-128), -- NT 4 style name
-	MS_PRINCIPAL_AND_ID = -129  #(-129), -- NT style name and SID
-	NTLM = -1200 #(-1200) -- NTLM name, realm is domain
+    UNKNOWN = 0     #(0),   -- Name type not known
+    PRINCIPAL = 1     #(1), -- Just the name of the principal as in
+    SRV_INST = 2     #(2),  -- Service and other unique instance (krbtgt)
+    SRV_HST = 3     #(3),   -- Service with host name as instance
+    SRV_XHST = 4     # (4), -- Service with host as remaining components
+    UID = 5     # (5),      -- Unique ID
+    X500_PRINCIPAL = 6     #(6), -- PKINIT
+    SMTP_NAME = 7     #(7), -- Name in form of SMTP email name
+    ENTERPRISE_PRINCIPAL = 10    #(10), -- Windows 2000 UPN
+    WELLKNOWN  = 11    #(11),   -- Wellknown
+    ENT_PRINCIPAL_AND_ID  = -130  #(-130), -- Windows 2000 UPN and SID
+    MS_PRINCIPAL = -128  #(-128), -- NT 4 style name
+    MS_PRINCIPAL_AND_ID = -129  #(-129), -- NT style name and SID
+    NTLM = -1200 #(-1200) -- NTLM name, realm is domain
 
 class Enctype(object):
     DES_CRC = 1
@@ -279,16 +279,19 @@ def build_pkinit_as_req(
     username: str, domain: str, key: rsa.RSAPrivateKey, cert: x509.Certificate
 ) -> Tuple[AS_REQ, DirtyDH]:
     now = datetime.datetime.now(datetime.timezone.utc)
+    print("Using opsec safe PKINIT")
 
     kdc_req_body_data = {}
-    kdc_req_body_data['kdc-options'] = KDCOptions({'forwardable','renewable','renewable-ok'})
+    # change KDC options
+    kdc_req_body_data['kdc-options'] = KDCOptions({'forwardable','renewable','canonicalize','renewable-ok'})
     kdc_req_body_data['cname'] = PrincipalName({'name-type': NAME_TYPE.PRINCIPAL.value, 'name-string': [username]})
     kdc_req_body_data['realm'] = domain.upper()
     kdc_req_body_data['sname'] = PrincipalName({'name-type': NAME_TYPE.SRV_INST.value, 'name-string': ['krbtgt', domain.upper()]})
     kdc_req_body_data['till']  = (now + datetime.timedelta(days=1)).replace(microsecond=0)
     kdc_req_body_data['rtime'] = (now + datetime.timedelta(days=1)).replace(microsecond=0)
     kdc_req_body_data['nonce'] = getrandbits(31)
-    kdc_req_body_data['etype'] = [18,17]
+    # change etype
+    kdc_req_body_data['etype'] = [17,18,19,20,21,23,25,26]
 
     kdc_req_body = KDC_REQ_BODY(kdc_req_body_data)
 

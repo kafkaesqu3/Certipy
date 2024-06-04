@@ -26,7 +26,7 @@ from impacket.krb5.asn1 import (
 )
 from impacket.krb5.asn1 import Ticket as TicketAsn1
 from impacket.krb5.asn1 import seq_set, seq_set_iter
-from impacket.krb5.ccache import CCache
+from impacket.krb5.ccache import CCach
 from impacket.krb5.crypto import Key, _enctype_table
 from impacket.krb5.kerberosv5 import KerberosError, sendReceive
 from impacket.krb5.pac import (
@@ -583,11 +583,11 @@ class Authenticate:
             tgs = decoder.decode(tgs, asn1Spec=TGS_REP())[0]
 
             ciphertext = tgs["ticket"]["enc-part"]["cipher"]
-
-            new_cipher = _enctype_table[int(tgs["ticket"]["enc-part"]["etype"])]
+            enctype = int(tgs["ticket"]["enc-part"]["etype"])
+            new_cipher = _enctype_table[enctype]
 
             plaintext = new_cipher.decrypt(session_key, 2, ciphertext)
-            special_key = Key(18, t_key)
+            special_key = Key(enctype, t_key)
 
             data = plaintext
             enc_ticket_part = decoder.decode(data, asn1Spec=EncTicketPart())[0]
